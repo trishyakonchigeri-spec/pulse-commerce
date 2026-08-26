@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, PackageCheck, ArrowRight, ShieldCheck, Printer } from 'lucide-react';
 import { useCart } from '@/components/CartContext';
 import { formatPrice, formatDate } from '@/lib/utils';
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const searchParams = useSearchParams();
   const orderNumber = searchParams.get('order_number');
   const sessionId = searchParams.get('session_id');
@@ -126,5 +126,17 @@ export default function CheckoutSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="container" style={{ padding: '6rem 0', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <h2>Loading Order Confirmation...</h2>
+      </div>
+    }>
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 }
