@@ -1,0 +1,143 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         String    @default("CUSTOMER") // CUSTOMER | ADMIN
+  avatarUrl    String?
+  orders       Order[]
+  reviews      Review[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  imageUrl    String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Product {
+  id               String          @id @default(cuid())
+  name             String
+  slug             String          @unique
+  headline         String?
+  description      String
+  price            Float
+  originalPrice    Float?
+  stock            Int             @default(0)
+  rating           Float           @default(5.0)
+  reviewCount      Int             @default(0)
+  images           String          // JSON array of URLs
+  specs            String?         // JSON object of key-value technical specs
+  badge            String?         // e.g. "HOT", "LIMITED", "FLASH SALE", "BESTSELLER"
+  isFeatured       Boolean         @default(false)
+  isFlashSale      Boolean         @default(false)
+  flashSaleEndsAt  DateTime?
+  categoryId       String
+  category         Category        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems       OrderItem[]
+  reviews          Review[]
+  inventoryLocks   InventoryLock[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([categoryId])
+  @@index([isFlashSale])
+  @@index([price])
+}
+
+model Order {
+  id              String          @id @default(cuid())
+  orderNumber     String          @unique
+  userId          String?
+  user            User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guestEmail      String?
+  status          String          @default("PENDING") // PENDING, PAID, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+  subtotal        Float
+  tax             Float           @default(0.0)
+  shipping        Float           @default(0.0)
+  total           Float
+  shippingAddress String          // JSON string: { name, street, city, state, zip, country }
+  stripeSessionId String?         @unique
+  idempotencyKey  String?         @unique
+  isPaid          Boolean         @default(false)
+  paidAt          DateTime?
+  items           OrderItem[]
+  inventoryLocks  InventoryLock[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  title     String
+  price     Float
+  quantity  Int
+  image     String?
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model InventoryLock {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderId     String?
+  order       Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  quantity    Int
+  expiresAt   DateTime
+  status      String   @default("HELD") // HELD, RELEASED, CONSUMED
+  sessionId   String?
+  createdAt   DateTime @default(now())
+
+  @@index([productId])
+  @@index([expiresAt])
+  @@index([status])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String
+  userName  String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+}
+
+model WebhookEvent {
+  id         String   @id @default(cuid())
+  eventId    String   @unique
+  eventType  String
+  payload    String
+  status     String   @default("PROCESSED") // PROCESSED, FAILED
+  processedAt DateTime @default(now())
+}
