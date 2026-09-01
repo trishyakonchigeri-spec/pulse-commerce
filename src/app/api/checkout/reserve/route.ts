@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { reserveStock } from '@/lib/concurrency';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const ReserveSchema = z.object({
   items: z.array(
     z.object({

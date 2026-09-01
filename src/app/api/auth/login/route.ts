@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { verifyPassword, signToken } from '@/lib/auth';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const LoginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),

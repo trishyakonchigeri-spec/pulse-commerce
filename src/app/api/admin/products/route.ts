@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { getUserFromRequest } from '@/lib/auth';
 import { cache } from '@/lib/redis';
 
+export const dynamic = 'force-dynamic';
+
 // PUT: Update product stock or details
 export async function PUT(req: NextRequest) {
   try {

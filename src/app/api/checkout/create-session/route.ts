@@ -5,6 +5,8 @@ import { createCheckoutSession } from '@/lib/stripe';
 import { generateOrderNumber } from '@/lib/utils';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const CheckoutSchema = z.object({
   sessionId: z.string().min(1),
   items: z.array(

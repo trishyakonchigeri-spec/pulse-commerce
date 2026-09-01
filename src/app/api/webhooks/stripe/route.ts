@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { stripe } from '@/lib/stripe';
 import { consumeStock } from '@/lib/concurrency';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const signature = req.headers.get('stripe-signature');
