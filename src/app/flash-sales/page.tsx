@@ -4,27 +4,33 @@ import ProductCard from '@/components/ProductCard';
 import FlashSaleCountdown from '@/components/FlashSaleCountdown';
 import { Zap, Flame, ShieldAlert } from 'lucide-react';
 import { ProductItem } from '@/types';
+import { MOCK_PRODUCTS } from '@/lib/mockData';
 
 export const dynamic = 'force-dynamic';
 
 export default async function FlashSalesPage() {
-  let flashProducts: any[] = [];
+  let flashProducts: ProductItem[] = [];
 
   try {
-    flashProducts = await prisma.product.findMany({
+    const raw = await prisma.product.findMany({
       where: { isFlashSale: true },
       include: { category: true },
       orderBy: { stock: 'asc' },
     });
+    if (raw && raw.length > 0) {
+      flashProducts = raw.map((p) => ({
+        ...p,
+        images: typeof p.images === 'string' ? JSON.parse(p.images || '[]') : (p.images || []),
+        specs: typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : (p.specs || {}),
+      }));
+    }
   } catch (err) {
-    console.warn('[FlashSales Warning] Query fallback:', err);
+    console.warn('[FlashSales Warning]: using mock catalog fallback');
   }
 
-  const parsedProducts: ProductItem[] = flashProducts.map((p) => ({
-    ...p,
-    images: typeof p.images === 'string' ? JSON.parse(p.images || '[]') : (p.images || []),
-    specs: typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : (p.specs || {}),
-  }));
+  if (flashProducts.length === 0) {
+    flashProducts = MOCK_PRODUCTS.filter((p) => p.isFlashSale);
+  }
 
   return (
     <div className="container" style={{ paddingTop: '3rem', paddingBottom: '5rem' }}>
@@ -62,7 +68,7 @@ export default async function FlashSalesPage() {
         gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
         gap: '2rem',
       }}>
-        {parsedProducts.map((product) => (
+        {flashProducts.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
       </div>

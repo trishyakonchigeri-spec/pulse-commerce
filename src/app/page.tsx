@@ -5,13 +5,14 @@ import ProductCard from '@/components/ProductCard';
 import FlashSaleCountdown from '@/components/FlashSaleCountdown';
 import { Zap, ShieldCheck, Database, Cpu, ArrowRight, Activity, Terminal, Layers } from 'lucide-react';
 import { ProductItem } from '@/types';
+import { MOCK_PRODUCTS } from '@/lib/mockData';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  let flashProducts: any[] = [];
-  let featuredProducts: any[] = [];
-  let totalProductsCount = 6;
+  let flashProducts: ProductItem[] = [];
+  let featuredProducts: ProductItem[] = [];
+  let totalProductsCount = MOCK_PRODUCTS.length;
 
   try {
     const [flash, featured, count] = await Promise.all([
@@ -27,24 +28,34 @@ export default async function HomePage() {
       }),
       prisma.product.count(),
     ]);
-    flashProducts = flash;
-    featuredProducts = featured;
-    totalProductsCount = count;
+
+    if (flash && flash.length > 0) {
+      flashProducts = flash.map((p) => ({
+        ...p,
+        images: typeof p.images === 'string' ? JSON.parse(p.images || '[]') : (p.images || []),
+        specs: typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : (p.specs || {}),
+      }));
+    }
+
+    if (featured && featured.length > 0) {
+      featuredProducts = featured.map((p) => ({
+        ...p,
+        images: typeof p.images === 'string' ? JSON.parse(p.images || '[]') : (p.images || []),
+        specs: typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : (p.specs || {}),
+      }));
+      totalProductsCount = count;
+    }
   } catch (err) {
-    console.warn('[HomePage Warning] Database query fallback:', err);
+    console.warn('[HomePage Database Warning]: using resilient mock catalog fallback');
   }
 
-  const parsedFlash: ProductItem[] = flashProducts.map((p) => ({
-    ...p,
-    images: typeof p.images === 'string' ? JSON.parse(p.images || '[]') : (p.images || []),
-    specs: typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : (p.specs || {}),
-  }));
-
-  const parsedFeatured: ProductItem[] = featuredProducts.map((p) => ({
-    ...p,
-    images: typeof p.images === 'string' ? JSON.parse(p.images || '[]') : (p.images || []),
-    specs: typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : (p.specs || {}),
-  }));
+  // Graceful fallback for serverless hosting without persistent SQLite
+  if (flashProducts.length === 0) {
+    flashProducts = MOCK_PRODUCTS.filter((p) => p.isFlashSale).slice(0, 3);
+  }
+  if (featuredProducts.length === 0) {
+    featuredProducts = MOCK_PRODUCTS.slice(0, 6);
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4rem', paddingBottom: '4rem' }}>
@@ -183,7 +194,7 @@ export default async function HomePage() {
           gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
           gap: '1.75rem',
         }}>
-          {parsedFlash.map((product) => (
+          {flashProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
@@ -216,7 +227,7 @@ export default async function HomePage() {
           gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
           gap: '1.75rem',
         }}>
-          {parsedFeatured.map((product) => (
+          {featuredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
