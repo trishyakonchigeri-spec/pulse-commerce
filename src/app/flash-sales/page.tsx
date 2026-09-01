@@ -8,16 +8,22 @@ import { ProductItem } from '@/types';
 export const dynamic = 'force-dynamic';
 
 export default async function FlashSalesPage() {
-  const flashProducts = await prisma.product.findMany({
-    where: { isFlashSale: true },
-    include: { category: true },
-    orderBy: { stock: 'asc' },
-  });
+  let flashProducts: any[] = [];
+
+  try {
+    flashProducts = await prisma.product.findMany({
+      where: { isFlashSale: true },
+      include: { category: true },
+      orderBy: { stock: 'asc' },
+    });
+  } catch (err) {
+    console.warn('[FlashSales Warning] Query fallback:', err);
+  }
 
   const parsedProducts: ProductItem[] = flashProducts.map((p) => ({
     ...p,
-    images: JSON.parse(p.images || '[]'),
-    specs: p.specs ? JSON.parse(p.specs) : {},
+    images: typeof p.images === 'string' ? JSON.parse(p.images || '[]') : (p.images || []),
+    specs: typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : (p.specs || {}),
   }));
 
   return (

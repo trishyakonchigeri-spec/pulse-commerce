@@ -9,31 +9,41 @@ import { ProductItem } from '@/types';
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  // Fetch flash sales and featured products directly on server
-  const [flashProducts, featuredProducts, totalProductsCount] = await Promise.all([
-    prisma.product.findMany({
-      where: { isFlashSale: true },
-      include: { category: true },
-      take: 3,
-    }),
-    prisma.product.findMany({
-      where: { isFeatured: true },
-      include: { category: true },
-      take: 6,
-    }),
-    prisma.product.count(),
-  ]);
+  let flashProducts: any[] = [];
+  let featuredProducts: any[] = [];
+  let totalProductsCount = 6;
+
+  try {
+    const [flash, featured, count] = await Promise.all([
+      prisma.product.findMany({
+        where: { isFlashSale: true },
+        include: { category: true },
+        take: 3,
+      }),
+      prisma.product.findMany({
+        where: { isFeatured: true },
+        include: { category: true },
+        take: 6,
+      }),
+      prisma.product.count(),
+    ]);
+    flashProducts = flash;
+    featuredProducts = featured;
+    totalProductsCount = count;
+  } catch (err) {
+    console.warn('[HomePage Warning] Database query fallback:', err);
+  }
 
   const parsedFlash: ProductItem[] = flashProducts.map((p) => ({
     ...p,
-    images: JSON.parse(p.images || '[]'),
-    specs: p.specs ? JSON.parse(p.specs) : {},
+    images: typeof p.images === 'string' ? JSON.parse(p.images || '[]') : (p.images || []),
+    specs: typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : (p.specs || {}),
   }));
 
   const parsedFeatured: ProductItem[] = featuredProducts.map((p) => ({
     ...p,
-    images: JSON.parse(p.images || '[]'),
-    specs: p.specs ? JSON.parse(p.specs) : {},
+    images: typeof p.images === 'string' ? JSON.parse(p.images || '[]') : (p.images || []),
+    specs: typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : (p.specs || {}),
   }));
 
   return (
